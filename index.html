@@ -1,0 +1,1288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mess Meal Management & Calculation Sheet</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            brand: {
+              50: '#eef2ff',
+              100: '#e0e7ff',
+              500: '#6366f1',
+              600: '#4f46e5',
+              700: '#4338ca',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    /* Custom scrollbar and print styles */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #f1f5f9;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+    @media print {
+      .no-print {
+        display: none !important;
+      }
+      body {
+        background-color: white !important;
+      }
+      .print-shadow-none {
+        box-shadow: none !important;
+        border: 1px solid #e2e8f0 !important;
+      }
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans antialiased min-h-screen flex flex-col selection:bg-indigo-100 selection:text-indigo-800">
+
+  <!-- Top Navbar -->
+  <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm no-print">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex flex-wrap items-center justify-between gap-4">
+      <div class="flex items-center space-x-3">
+        <div class="p-2.5 bg-gradient-to-tr from-indigo-600 to-indigo-500 rounded-xl text-white shadow-md shadow-indigo-100">
+          <i data-lucide="utensils" class="w-5 h-5"></i>
+        </div>
+        <div>
+          <h1 class="text-lg font-bold text-slate-900 tracking-tight flex items-center gap-2">
+            Mess Meal Sheet
+            <span id="syncStatusBadge" class="text-xs px-2.5 py-0.5 rounded-full font-medium bg-emerald-50 text-emerald-700 border border-emerald-200 inline-flex items-center gap-1.5">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+              <span id="syncStatusText">Ready</span>
+            </span>
+          </h1>
+          <p class="text-xs text-slate-500">মেস মিল হিসাব ও গুগল শিট লাইভ সিঙ্ক ড্যাশবোর্ড</p>
+        </div>
+      </div>
+
+      <!-- Action buttons -->
+      <div class="flex items-center gap-2 flex-wrap">
+        <!-- Cloud Sync Controls -->
+        <button id="syncNowBtn" onclick="syncWithGoogleSheet()" title="গুগল শিটের সাথে সিঙ্ক করুন" class="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-300 transition-all shadow-sm">
+          <i data-lucide="refresh-cw" id="syncSpinner" class="w-3.5 h-3.5"></i>
+          <span>Sync Now</span>
+        </button>
+
+        <button onclick="openSheetConfigModal()" title="Google Sheet API সেটআপ" class="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium rounded-lg bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 transition-all shadow-sm">
+          <i data-lucide="cloud-cog" class="w-3.5 h-3.5 text-indigo-600"></i>
+          <span class="hidden sm:inline">Sheet কানেক্ট</span>
+        </button>
+
+        <button onclick="openAddMemberModal()" class="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm transition-all focus:ring-2 focus:ring-indigo-400 focus:outline-none">
+          <i data-lucide="user-plus" class="w-3.5 h-3.5"></i>
+          <span>সদস্য যোগ</span>
+        </button>
+
+        <!-- Copy Summary Image Button -->
+        <button id="copySummaryBtn" onclick="copySummaryImage()" class="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-lg bg-slate-900 hover:bg-black text-white shadow-sm transition-all">
+          <i data-lucide="image" class="w-3.5 h-3.5 text-amber-400"></i>
+          <span>Copy Image</span>
+        </button>
+
+        <button onclick="exportToCSV()" class="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium rounded-lg bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 shadow-sm transition-all">
+          <i data-lucide="download" class="w-3.5 h-3.5 text-slate-500"></i>
+          <span class="hidden sm:inline">CSV</span>
+        </button>
+
+        <button onclick="window.print()" class="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium rounded-lg bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 shadow-sm transition-all">
+          <i data-lucide="printer" class="w-3.5 h-3.5 text-slate-500"></i>
+          <span class="hidden sm:inline">Print</span>
+        </button>
+
+        <button onclick="resetToInitialData()" title="Reset to reference data" class="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all">
+          <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+
+    <!-- KPI Summary Stat Cards -->
+    <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+      <!-- Total Deposit -->
+      <div class="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-sm hover:shadow transition-shadow">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">মোট জমা (Deposit)</span>
+          <div class="p-2 bg-blue-50 text-blue-600 rounded-lg">
+            <i data-lucide="wallet" class="w-4 h-4"></i>
+          </div>
+        </div>
+        <div class="mt-3">
+          <span id="kpi-total-deposit" class="text-2xl font-bold font-mono text-slate-900 tracking-tight">৳ 0</span>
+        </div>
+        <p class="mt-1 text-xs text-slate-400">সকল মেম্বারের জমা</p>
+      </div>
+
+      <!-- Total Mess Expense -->
+      <div class="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-sm hover:shadow transition-shadow ring-1 ring-indigo-50">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-semibold text-indigo-700 uppercase tracking-wider">বাজার খরচ (Expense)</span>
+          <div class="p-2 bg-indigo-50 text-indigo-600 rounded-lg">
+            <i data-lucide="shopping-bag" class="w-4 h-4"></i>
+          </div>
+        </div>
+        <div class="mt-2 flex items-center gap-1.5">
+          <span class="text-lg font-bold text-indigo-600">৳</span>
+          <input type="number" step="any" id="totalExpenseInput" oninput="handleExpenseChange()" 
+            class="text-xl font-bold font-mono text-indigo-900 bg-indigo-50/50 border border-indigo-200 rounded-lg px-2 py-0.5 w-full focus:outline-none focus:ring-2 focus:ring-indigo-500">
+        </div>
+        <p class="mt-1 text-xs text-slate-400 flex items-center justify-between">
+          <span>মোট বাজার খরচ</span>
+          <button onclick="syncExpenseWithDeposit()" class="text-indigo-600 hover:underline font-medium text-[11px] no-print">জমার সমান করুন</button>
+        </p>
+      </div>
+
+      <!-- Total Meals -->
+      <div class="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-sm hover:shadow transition-shadow">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">মোট মিল (Meals)</span>
+          <div class="p-2 bg-amber-50 text-amber-600 rounded-lg">
+            <i data-lucide="pie-chart" class="w-4 h-4"></i>
+          </div>
+        </div>
+        <div class="mt-3">
+          <span id="kpi-total-meals" class="text-2xl font-bold font-mono text-slate-900 tracking-tight">0</span>
+        </div>
+        <p class="mt-1 text-xs text-slate-400">মেসের মোট খাওয়া মিল</p>
+      </div>
+
+      <!-- Current Meal Rate -->
+      <div class="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-sm hover:shadow transition-shadow bg-gradient-to-br from-white to-amber-50/40">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-semibold text-slate-600 uppercase tracking-wider">বর্তমান মিল রেট</span>
+          <div class="p-2 bg-amber-100 text-amber-700 rounded-lg">
+            <i data-lucide="calculator" class="w-4 h-4"></i>
+          </div>
+        </div>
+        <div class="mt-3 flex items-baseline gap-1">
+          <span id="kpi-meal-rate" class="text-2xl font-extrabold font-mono text-amber-600 tracking-tight">৳ 0.00</span>
+        </div>
+        <p class="mt-1 text-xs text-slate-400">বাজার খরচ ÷ মোট মিল</p>
+      </div>
+
+      <!-- Balance Status -->
+      <div class="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-sm hover:shadow transition-shadow">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">মেস ক্যাশ হাতে</span>
+          <div class="p-2 bg-emerald-50 text-emerald-600 rounded-lg">
+            <i data-lucide="badge-percent" class="w-4 h-4"></i>
+          </div>
+        </div>
+        <div class="mt-3">
+          <span id="kpi-cash-in-hand" class="text-2xl font-bold font-mono text-emerald-600 tracking-tight">৳ 0.00</span>
+        </div>
+        <p id="kpi-cash-label" class="mt-1 text-xs text-slate-400">জমা - মোট বাজার খরচ</p>
+      </div>
+    </section>
+
+    <!-- Table Header Controls (Search, Calculation explanation, Info tag) -->
+    <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden print-shadow-none">
+      <div class="p-4 sm:p-5 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h2 class="text-base font-bold text-slate-900 flex items-center gap-2">
+            <span>সদস্য ভিত্তিক বিস্তারিত তালিকা</span>
+            <span id="memberCountBadge" class="text-xs bg-slate-100 text-slate-600 font-semibold px-2 py-0.5 rounded-full">7 জন</span>
+          </h2>
+          <p class="text-xs text-slate-500 mt-0.5">নাম, জমা টাকা বা মিলের সংখ্যা সরাসরি এডিট করতে পারবেন। ক্যালকুলেশন সাথে সাথে আপডেট হবে।</p>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-3 no-print">
+          <!-- Search input -->
+          <div class="relative min-w-[200px]">
+            <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+            <input type="text" id="searchInput" oninput="renderTable()" placeholder="নাম দিয়ে খুঁজুন..." 
+              class="w-full pl-9 pr-3 py-1.5 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:bg-white focus:ring-2 focus:ring-indigo-400 transition-all">
+          </div>
+
+          <!-- Formula toggle / helper info -->
+          <div class="text-xs bg-slate-50 text-slate-600 border border-slate-200 px-3 py-1.5 rounded-lg flex items-center gap-2">
+            <span class="inline-block w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+            <span>সবুজ = ফেরত পাবে (Refund)</span>
+            <span class="inline-block w-2.5 h-2.5 rounded-full bg-rose-500 ml-2"></span>
+            <span>লাল = জমা দিতে হবে (Due)</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Main Spreadsheet Table -->
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-sm border-collapse">
+          <thead>
+            <tr class="bg-slate-50/80 border-b border-slate-200 text-xs font-bold text-slate-600 uppercase tracking-wider select-none">
+              <th scope="col" class="py-3 px-4 w-12 text-center text-slate-400">#</th>
+              <th scope="col" class="py-3 px-4 min-w-[170px]">সদস্যের নাম (Member)</th>
+              <th scope="col" class="py-3 px-4 text-right min-w-[130px]">জমা (Deposit)</th>
+              <th scope="col" class="py-3 px-4 text-right min-w-[120px]">মিল সংখ্যা (Meal)</th>
+              <th scope="col" class="py-3 px-4 text-right min-w-[120px] text-amber-700 bg-amber-50/40">মিল রেট (Rate)</th>
+              <th scope="col" class="py-3 px-4 text-right min-w-[140px]">মিল খরচ (Total Cost)</th>
+              <th scope="col" class="py-3 px-4 text-right min-w-[170px]">ব্যালেন্স (TC - Deposit)</th>
+              <th scope="col" class="py-3 px-4 text-center min-w-[110px]">স্ট্যাটাস</th>
+              <th scope="col" class="py-3 px-3 w-16 text-center no-print">অ্যাকশন</th>
+            </tr>
+          </thead>
+          <tbody id="memberTableBody" class="divide-y divide-slate-100 font-normal">
+            <!-- Dynamic Rows Injected by JS -->
+          </tbody>
+          <!-- Table Footer Total Row -->
+          <tfoot id="tableFooter" class="bg-slate-50/90 border-t-2 border-slate-200 font-bold text-slate-800">
+            <!-- Dynamic Totals Injected by JS -->
+          </tfoot>
+        </table>
+      </div>
+    </div>
+
+    <!-- Quick Formula & Calculation Legend Card -->
+    <div class="bg-gradient-to-r from-slate-100 via-white to-slate-100 border border-slate-200/80 rounded-2xl p-4 sm:p-5 text-xs text-slate-600 no-print flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+      <div class="space-y-1">
+        <div class="font-bold text-slate-800 flex items-center gap-1.5">
+          <i data-lucide="info" class="w-4 h-4 text-indigo-500"></i>
+          হিসাবের নিয়মাবলী (Calculation Logic)
+        </div>
+        <p>1. <strong class="text-slate-700">মিল রেট (Meal Rate)</strong> = মোট বাজার খরচ ÷ মোট মিল সংখ্যা</p>
+        <p>2. <strong class="text-slate-700">মিল খরচ (Total Cost)</strong> = মেম্বারের মিল সংখ্যা × মিল রেট</p>
+        <p>3. <strong class="text-slate-700">TC - Deposit</strong>: মান ধনাত্মক (+) হলে মেসকে বকেয়া দিতে হবে (Due), মান ঋণাত্মক (-) হলে মেম্বার মেস থেকে অতিরিক্ত টাকা ফেরত পাবে (Refund)।</p>
+      </div>
+
+      <div class="flex items-center gap-2 self-end md:self-center">
+        <button onclick="roundAllValues()" class="px-3 py-1.5 rounded-lg bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 transition shadow-sm font-medium">
+          দশমিক পূর্ণসংখ্যায় রূপান্তর
+        </button>
+      </div>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="mt-auto border-t border-slate-200 bg-white py-4 text-center text-xs text-slate-400 no-print">
+    <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row justify-between items-center gap-2">
+      <p>© মেস মিল হিসাব শিট • অটোমেটিক হিসাব ও নির্ভুল মিল ট্র্যাকার</p>
+      <p class="text-slate-500">তৈরি করা হয়েছে মেস সদস্যদের দৈনন্দিন হিসাব সহজ করার জন্য</p>
+    </div>
+  </footer>
+
+  <!-- Modal: Add New Member -->
+  <div id="addMemberModal" class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm hidden items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-xl max-w-md w-full overflow-hidden border border-slate-200 transform transition-all">
+      <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+        <h3 class="font-bold text-slate-800 flex items-center gap-2">
+          <i data-lucide="user-plus" class="w-5 h-5 text-indigo-600"></i>
+          নতুন মেম্বার যোগ করুন
+        </h3>
+        <button onclick="closeAddMemberModal()" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <form id="addMemberForm" onsubmit="handleAddMember(event)" class="p-6 space-y-4">
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">সদস্যের নাম (Full Name)</label>
+          <input type="text" id="modalName" required placeholder="উদাঃ Tanvir Rahman" 
+            class="w-full px-3.5 py-2 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">জমা টাকা (Deposit ৳)</label>
+            <input type="number" step="any" min="0" id="modalDeposit" required placeholder="2000" 
+              class="w-full px-3.5 py-2 text-sm font-mono border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">মোট মিল (Meals)</label>
+            <input type="number" step="0.5" min="0" id="modalMeal" required placeholder="35.5" 
+              class="w-full px-3.5 py-2 text-sm font-mono border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+          </div>
+        </div>
+
+        <div class="pt-2 flex items-center justify-end gap-2.5">
+          <button type="button" onclick="closeAddMemberModal()" class="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-xl transition">
+            বাতিল
+          </button>
+          <button type="submit" class="px-4 py-2 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-sm transition">
+            যুক্ত করুন
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Notification Toast Container -->
+  <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+  <!-- Offscreen canvas for rendering crisp summary images -->
+  <canvas id="summaryCanvas" class="hidden"></canvas>
+
+  <!-- Modal: Google Sheet API Setup & Apps Script Guide -->
+  <div id="sheetConfigModal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-xl w-full overflow-hidden border border-slate-200">
+      <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+        <h3 class="font-bold text-slate-800 text-sm flex items-center gap-2">
+          <i data-lucide="cloud" class="w-4 h-4 text-indigo-600"></i>
+          Google Sheets লাইভ সিঙ্ক সেটআপ
+        </h3>
+        <button onclick="closeSheetConfigModal()" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <div class="p-6 space-y-4 max-h-[75vh] overflow-y-auto text-xs text-slate-600">
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1">Google Apps Script Web App URL</label>
+          <input type="url" id="sheetApiUrlInput" placeholder="https://script.google.com/macros/s/AKfycb.../exec"
+            class="w-full px-3 py-2 text-xs font-mono border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+          <p class="text-[11px] text-slate-400 mt-1">আপনার গুগল শিটের Apps Script Deploy করে প্রাপ্ত Web App URL-টি এখানে দিন।</p>
+        </div>
+
+        <div class="rounded-xl border border-indigo-100 bg-indigo-50/50 p-4 space-y-2.5">
+          <h4 class="font-bold text-indigo-950 flex items-center gap-1.5">
+            <i data-lucide="help-circle" class="w-3.5 h-3.5 text-indigo-600"></i>
+            কিভাবে ৩ মিনিটে কানেক্ট করবেন?
+          </h4>
+          <ol class="list-decimal list-inside space-y-1.5 text-slate-700 leading-relaxed">
+            <li>আপনার Google Sheet ওপেন করে <strong>Extensions &gt; Apps Script</strong> এ যান।</li>
+            <li>সেখানে থাকা কোড মুছে নিচের স্ক্রিপ্টটি পেস্ট করে সেভ করুন:</li>
+          </ol>
+
+          <div class="relative bg-slate-900 text-slate-100 font-mono text-[11px] p-3 rounded-lg overflow-x-auto">
+            <button onclick="copyAppsScriptCode()" type="button" class="absolute top-2 right-2 px-2 py-1 bg-slate-700 hover:bg-slate-600 text-[10px] text-white rounded">কপি কোড</button>
+            <pre id="appsScriptCodeBlock">function doGet() {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+  const rows = sheet.getDataRange().getValues();
+  return ContentService.createTextOutput(JSON.stringify({ data: rows }))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+function doPost(e) {
+  try {
+    const payload = JSON.parse(e.postData.contents);
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+    sheet.clearContents();
+    sheet.appendRow(["DEPOSIT", "Amount", "Meal", "Meal Rate", "Total Cost", "TC-Amount"]);
+    payload.members.forEach(function(m) {
+      sheet.appendRow([m.name, m.deposit, m.meal, payload.mealRate, (m.meal * payload.mealRate), ((m.meal * payload.mealRate) - m.deposit)]);
+    });
+    sheet.appendRow(["Total", payload.totalDeposit, payload.totalMeals, payload.mealRate, payload.totalExpense, 0]);
+    return ContentService.createTextOutput(JSON.stringify({ status: "success" })).setMimeType(ContentService.MimeType.JSON);
+  } catch (err) {
+    return ContentService.createTextOutput(JSON.stringify({ status: "error", message: err.toString() })).setMimeType(ContentService.MimeType.JSON);
+  }
+}</pre>
+          </div>
+
+          <ol start="3" class="list-decimal list-inside space-y-1.5 text-slate-700 leading-relaxed">
+            <li>উপরের নীল <strong>Deploy &gt; New deployment</strong> এ ক্লিক করুন।</li>
+            <li>Select type-এ <strong>Web app</strong> দিন, <strong>Who has access: Anyone</strong> সিলেক্ট করুন।</li>
+            <li>Deploy দিলে যে <strong>Web App URL</strong> পাবেন, তা কপি করে উপরের বক্সে পেস্ট করে সেভ করুন।</li>
+          </ol>
+        </div>
+      </div>
+
+      <div class="px-6 py-3.5 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
+        <button onclick="testSheetConnection()" type="button" class="px-3 py-1.5 text-xs font-semibold text-indigo-700 hover:bg-indigo-100 rounded-lg transition">
+          কানেকশন টেস্ট করুন
+        </button>
+        <div class="flex gap-2">
+          <button onclick="closeSheetConfigModal()" type="button" class="px-4 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-200 rounded-lg transition">
+            বাতিল
+          </button>
+          <button onclick="saveSheetConfig()" type="button" class="px-4 py-1.5 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg shadow transition">
+            সংরক্ষণ ও সিঙ্ক
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Image Preview & Download Fallback Modal -->
+  <div id="imagePreviewModal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden border border-slate-200">
+      <div class="px-5 py-3.5 border-b border-slate-100 flex items-center justify-between">
+        <h3 class="font-bold text-slate-800 text-sm flex items-center gap-2">
+          <i data-lucide="check-circle" class="w-4 h-4 text-emerald-600"></i>
+          সামারি কার্ড তৈরি হয়েছে
+        </h3>
+        <button onclick="closeImageModal()" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+      <div class="p-4 max-h-[70vh] overflow-y-auto flex flex-col items-center bg-slate-50">
+        <img id="previewImageTag" class="rounded-xl border border-slate-200 shadow-sm max-w-full h-auto" alt="Mess Summary Preview" />
+      </div>
+      <div class="p-4 bg-white border-t border-slate-100 flex items-center justify-between gap-3">
+        <span class="text-xs text-slate-500">ছবিটি গ্রুপে সরাসরি পেস্ট বা শেয়ার করুন</span>
+        <div class="flex gap-2">
+          <button id="modalDownloadBtn" class="px-3.5 py-1.5 text-xs font-semibold rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 transition">
+            ডাউনলোড
+          </button>
+          <button onclick="closeImageModal()" class="px-3.5 py-1.5 text-xs font-semibold rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white transition">
+            ঠিক আছে
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Application Logic -->
+  <script>
+    // Initial Dataset extracted directly from the reference sheet
+    const INITIAL_MEMBERS = [
+      { id: '1', name: 'Faysal', deposit: 2960, meal: 38.5 },
+      { id: '2', name: 'NAVID', deposit: 1600, meal: 34.5 },
+      { id: '3', name: 'TAWHID', deposit: 1675, meal: 39.5 },
+      { id: '4', name: 'Shovon', deposit: 1830, meal: 30.0 },
+      { id: '5', name: 'HASAN', deposit: 2080, meal: 53.0 },
+      { id: '6', name: 'Rafiq', deposit: 3013, meal: 9.0 },
+      { id: '7', name: 'Atif', deposit: 1230, meal: 41.0 }
+    ];
+
+    // App State
+    let members = [];
+    let totalExpense = 14388; // Default to match reference image sum
+    let isExpenseManuallySet = false;
+    let googleSheetApiUrl = localStorage.getItem('mess_sheet_api_url') || '';
+    let autoSaveTimeout = null;
+
+    // Load data from LocalStorage or default
+    function initData() {
+      const savedMembers = localStorage.getItem('mess_members_data');
+      const savedExpense = localStorage.getItem('mess_total_expense');
+      
+      if (savedMembers) {
+        try {
+          members = JSON.parse(savedMembers);
+        } catch (e) {
+          members = [...INITIAL_MEMBERS];
+        }
+      } else {
+        members = JSON.parse(JSON.stringify(INITIAL_MEMBERS));
+      }
+
+      if (savedExpense && !isNaN(parseFloat(savedExpense))) {
+        totalExpense = parseFloat(savedExpense);
+        isExpenseManuallySet = true;
+      } else {
+        const sumDeposit = members.reduce((sum, m) => sum + (Number(m.deposit) || 0), 0);
+        totalExpense = sumDeposit || 14388;
+      }
+
+      document.getElementById('totalExpenseInput').value = totalExpense;
+      updateSyncStatusUI();
+      calculateAndRender();
+
+      // If API URL exists, attempt an automatic initial fetch from Google Sheets
+      if (googleSheetApiUrl) {
+        fetchFromGoogleSheet();
+      }
+    }
+
+    // Google Sheets Config Modal Handlers
+    function openSheetConfigModal() {
+      document.getElementById('sheetApiUrlInput').value = googleSheetApiUrl;
+      document.getElementById('sheetConfigModal').classList.remove('hidden');
+      document.getElementById('sheetConfigModal').classList.add('flex');
+    }
+
+    function closeSheetConfigModal() {
+      document.getElementById('sheetConfigModal').classList.add('hidden');
+      document.getElementById('sheetConfigModal').classList.remove('flex');
+    }
+
+    function saveSheetConfig() {
+      const inputVal = document.getElementById('sheetApiUrlInput').value.trim();
+      googleSheetApiUrl = inputVal;
+      localStorage.setItem('mess_sheet_api_url', googleSheetApiUrl);
+      closeSheetConfigModal();
+      showToast("Google Sheet URL সংরক্ষিত হয়েছে!", "success");
+      updateSyncStatusUI();
+      if (googleSheetApiUrl) {
+        syncWithGoogleSheet();
+      }
+    }
+
+    function copyAppsScriptCode() {
+      const code = document.getElementById('appsScriptCodeBlock').innerText;
+      const el = document.createElement('textarea');
+      el.value = code;
+      document.body.appendChild(el);
+      el.select();
+      document.execCommand('copy');
+      document.body.removeChild(el);
+      showToast("কোড ক্লিপবোর্ডে কপি হয়েছে!", "success");
+    }
+
+    function updateSyncStatusUI(status = 'ready') {
+      const badge = document.getElementById('syncStatusBadge');
+      const text = document.getElementById('syncStatusText');
+      if (!googleSheetApiUrl) {
+        badge.className = "text-xs px-2.5 py-0.5 rounded-full font-medium bg-amber-50 text-amber-700 border border-amber-200 inline-flex items-center gap-1.5";
+        text.textContent = "Local Only (Sheet সেট করুন)";
+        return;
+      }
+
+      if (status === 'syncing') {
+        badge.className = "text-xs px-2.5 py-0.5 rounded-full font-medium bg-blue-50 text-blue-700 border border-blue-200 inline-flex items-center gap-1.5";
+        text.textContent = "সিঙ্ক হচ্ছে...";
+      } else if (status === 'synced') {
+        badge.className = "text-xs px-2.5 py-0.5 rounded-full font-medium bg-emerald-50 text-emerald-700 border border-emerald-200 inline-flex items-center gap-1.5";
+        text.textContent = "Google Sheet Synced ✓";
+      } else if (status === 'error') {
+        badge.className = "text-xs px-2.5 py-0.5 rounded-full font-medium bg-rose-50 text-rose-700 border border-rose-200 inline-flex items-center gap-1.5";
+        text.textContent = "সিঙ্ক ফেইল";
+      } else {
+        badge.className = "text-xs px-2.5 py-0.5 rounded-full font-medium bg-emerald-50 text-emerald-700 border border-emerald-200 inline-flex items-center gap-1.5";
+        text.textContent = "Cloud Connected";
+      }
+    }
+
+    // Two-Way Sync Engine: Fetch from Google Sheet
+    async function fetchFromGoogleSheet() {
+      if (!googleSheetApiUrl) return;
+      try {
+        updateSyncStatusUI('syncing');
+        const res = await fetch(googleSheetApiUrl);
+        const json = await res.json();
+
+        if (json && json.data && Array.isArray(json.data) && json.data.length > 1) {
+          const rows = json.data;
+          // Row 0 is header: ["DEPOSIT", "Amount", "Meal", "Meal Rate", "Total Cost", "TC-Amount"]
+          const parsed = [];
+          for (let i = 1; i < rows.length; i++) {
+            const row = rows[i];
+            const name = String(row[0] || '').trim();
+            if (!name || name.toLowerCase() === 'total') continue;
+
+            parsed.push({
+              id: 'sheet_' + i,
+              name: name,
+              deposit: parseFloat(row[1]) || 0,
+              meal: parseFloat(row[2]) || 0
+            });
+          }
+
+          if (parsed.length > 0) {
+            members = parsed;
+            // Check if last row has Total expense
+            const totalRow = rows.find(r => String(r[0]).toLowerCase() === 'total');
+            if (totalRow && totalRow[4]) {
+              totalExpense = parseFloat(totalRow[4]) || totalExpense;
+              document.getElementById('totalExpenseInput').value = totalExpense;
+            }
+            persistData(false); // local only
+            calculateAndRender();
+            updateSyncStatusUI('synced');
+            showToast("গুগল শিট থেকে ডাটা ফেচ সফল হয়েছে!", "success");
+            return;
+          }
+        }
+        updateSyncStatusUI('synced');
+      } catch (err) {
+        console.warn("Sheet fetch error:", err);
+        updateSyncStatusUI('error');
+      }
+    }
+
+    // Two-Way Sync Engine: Push state to Google Sheet
+    async function pushToGoogleSheet() {
+      if (!googleSheetApiUrl) return;
+      updateSyncStatusUI('syncing');
+      const spinner = document.getElementById('syncSpinner');
+      if (spinner) spinner.classList.add('animate-spin');
+
+      try {
+        const { totalDeposit, totalMeals, mealRate } = computeMetrics();
+        const payload = {
+          members: members,
+          totalDeposit: totalDeposit,
+          totalMeals: totalMeals,
+          mealRate: parseFloat(mealRate.toFixed(4)),
+          totalExpense: totalExpense
+        };
+
+        await fetch(googleSheetApiUrl, {
+          method: 'POST',
+          mode: 'no-cors', // standard Apps Script redirect handling
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        updateSyncStatusUI('synced');
+        showToast("✓ গুগল শিটে অটো-সেভ সম্পন্ন হয়েছে!", "success");
+      } catch (err) {
+        console.error("Sheet push error:", err);
+        updateSyncStatusUI('error');
+        showToast("গুগল শিটে সেভ হতে সমস্যা হয়েছে!", "info");
+      } finally {
+        if (spinner) spinner.classList.remove('animate-spin');
+      }
+    }
+
+    // Trigger full manual sync
+    async function syncWithGoogleSheet() {
+      if (!googleSheetApiUrl) {
+        openSheetConfigModal();
+        return;
+      }
+      await pushToGoogleSheet();
+    }
+
+    async function testSheetConnection() {
+      const url = document.getElementById('sheetApiUrlInput').value.trim();
+      if (!url) {
+        showToast("দয়া করে Web App URL দিন!", "info");
+        return;
+      }
+      try {
+        showToast("কানেক্ট করার চেষ্টা চলছে...", "info");
+        const res = await fetch(url);
+        const data = await res.json();
+        if (data) {
+          showToast("সফলভাবে Google Sheet কানেক্ট হয়েছে!", "success");
+        }
+      } catch (e) {
+        showToast("কানেকশন চেক করুন! নিশ্চিত করুন 'Anyone' পারমিশন দেওয়া আছে।", "info");
+      }
+    }
+
+    // Save state to LocalStorage and debounce push to Sheet
+    function persistData(triggerCloudSync = true) {
+      localStorage.setItem('mess_members_data', JSON.stringify(members));
+      localStorage.setItem('mess_total_expense', totalExpense);
+
+      if (triggerCloudSync && googleSheetApiUrl) {
+        clearTimeout(autoSaveTimeout);
+        autoSaveTimeout = setTimeout(() => {
+          pushToGoogleSheet();
+        }, 1200); // 1.2s debounce to prevent spamming while typing
+      }
+    }
+
+    // Reset back to reference sheet initial state
+    function resetToInitialData() {
+      if (window.confirm("আপনি কি নিশ্চিত যে রেফারেন্স শিটের আসল তথ্যে ফিরে যেতে চান?")) {
+        members = JSON.parse(JSON.stringify(INITIAL_MEMBERS));
+        totalExpense = 14388;
+        isExpenseManuallySet = false;
+        document.getElementById('totalExpenseInput').value = totalExpense;
+        persistData();
+        calculateAndRender();
+        showToast("ডাটা রিসেট সম্পন্ন হয়েছে!", "info");
+      }
+    }
+
+    // Handle Mess Expense change
+    function handleExpenseChange() {
+      const val = parseFloat(document.getElementById('totalExpenseInput').value);
+      totalExpense = isNaN(val) ? 0 : val;
+      isExpenseManuallySet = true;
+      persistData();
+      calculateAndRender();
+    }
+
+    function syncExpenseWithDeposit() {
+      const sumDeposit = members.reduce((sum, m) => sum + (Number(m.deposit) || 0), 0);
+      totalExpense = sumDeposit;
+      document.getElementById('totalExpenseInput').value = totalExpense;
+      isExpenseManuallySet = false;
+      persistData();
+      calculateAndRender();
+      showToast("মোট খরচ মোট জমার সাথে সমান করা হয়েছে।", "success");
+    }
+
+    // Compute Derived Calculations
+    function computeMetrics() {
+      const totalDeposit = members.reduce((sum, m) => sum + (Number(m.deposit) || 0), 0);
+      const totalMeals = members.reduce((sum, m) => sum + (Number(m.meal) || 0), 0);
+      
+      const mealRate = totalMeals > 0 ? (totalExpense / totalMeals) : 0;
+      const cashInHand = totalDeposit - totalExpense;
+
+      return {
+        totalDeposit,
+        totalMeals,
+        mealRate,
+        cashInHand
+      };
+    }
+
+    // Render Table and KPIs
+    function calculateAndRender() {
+      const { totalDeposit, totalMeals, mealRate, cashInHand } = computeMetrics();
+
+      // Update KPI displays
+      document.getElementById('kpi-total-deposit').textContent = `৳ ${totalDeposit.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
+      document.getElementById('kpi-total-meals').textContent = totalMeals.toFixed(1);
+      document.getElementById('kpi-meal-rate').textContent = `৳ ${mealRate.toFixed(4)}`;
+      
+      const cashEl = document.getElementById('kpi-cash-in-hand');
+      cashEl.textContent = `৳ ${cashInHand.toFixed(2)}`;
+      if (cashInHand >= 0) {
+        cashEl.className = "text-2xl font-bold font-mono text-emerald-600 tracking-tight";
+      } else {
+        cashEl.className = "text-2xl font-bold font-mono text-rose-600 tracking-tight";
+      }
+
+      renderTable();
+      lucide.createIcons();
+    }
+
+    // Render Table Rows
+    function renderTable() {
+      const searchQuery = (document.getElementById('searchInput')?.value || '').toLowerCase().trim();
+      const tbody = document.getElementById('memberTableBody');
+      const tfoot = document.getElementById('tableFooter');
+      const { totalDeposit, totalMeals, mealRate } = computeMetrics();
+
+      const filteredMembers = members.filter(m => m.name.toLowerCase().includes(searchQuery));
+      document.getElementById('memberCountBadge').textContent = `${members.length} জন`;
+
+      if (filteredMembers.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="9" class="py-12 text-center text-slate-400">
+              <i data-lucide="search-x" class="w-8 h-8 mx-auto mb-2 opacity-50"></i>
+              কোন সদস্য পাওয়া যায়নি!
+            </td>
+          </tr>
+        `;
+        tfoot.innerHTML = '';
+        lucide.createIcons();
+        return;
+      }
+
+      let totalCalculatedCost = 0;
+      let totalBalanceDiff = 0;
+
+      let html = '';
+      filteredMembers.forEach((member, index) => {
+        const deposit = Number(member.deposit) || 0;
+        const meal = Number(member.meal) || 0;
+        const totalCost = meal * mealRate;
+        // Formula matching the image: TC - Deposit
+        // Positive means member owes mess (Due / ঘাটতি)
+        // Negative means mess owes member (Refund / ফেরত পাবে)
+        const diff = totalCost - deposit;
+
+        totalCalculatedCost += totalCost;
+        totalBalanceDiff += diff;
+
+        const isDue = diff > 0.001;
+        const isRefund = diff < -0.001;
+
+        // Styling based on state
+        const diffColorClass = isDue 
+          ? 'text-rose-600 font-semibold' 
+          : (isRefund ? 'text-emerald-600 font-semibold' : 'text-slate-600');
+        
+        const badgeHtml = isDue
+          ? `<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-rose-50 text-rose-700 border border-rose-200">দিতে হবে (Due)</span>`
+          : (isRefund
+            ? `<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">ফেরত পাবে (Refund)</span>`
+            : `<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-slate-100 text-slate-600">সমান (Settled)</span>`
+          );
+
+        html += `
+          <tr class="hover:bg-indigo-50/30 transition-colors group">
+            <td class="py-3 px-4 text-center font-mono text-xs text-slate-400">${index + 1}</td>
+            <td class="py-3 px-4 font-semibold text-slate-800">
+              <input type="text" value="${escapeHtml(member.name)}" 
+                onchange="updateMemberField('${member.id}', 'name', this.value)"
+                class="w-full bg-transparent border border-transparent hover:border-slate-300 focus:border-indigo-500 rounded px-1.5 py-0.5 font-medium text-slate-900 focus:bg-white focus:outline-none transition-all">
+            </td>
+            <td class="py-3 px-4 text-right">
+              <input type="number" step="any" min="0" value="${deposit}" 
+                onchange="updateMemberField('${member.id}', 'deposit', this.value)"
+                class="w-24 text-right font-mono bg-transparent border border-transparent hover:border-slate-300 focus:border-indigo-500 rounded px-1.5 py-0.5 font-semibold text-slate-800 focus:bg-white focus:outline-none transition-all">
+            </td>
+            <td class="py-3 px-4 text-right">
+              <input type="number" step="0.5" min="0" value="${meal}" 
+                onchange="updateMemberField('${member.id}', 'meal', this.value)"
+                class="w-20 text-right font-mono bg-transparent border border-transparent hover:border-slate-300 focus:border-indigo-500 rounded px-1.5 py-0.5 font-semibold text-slate-800 focus:bg-white focus:outline-none transition-all">
+            </td>
+            <td class="py-3 px-4 text-right font-mono text-xs text-amber-700 font-medium bg-amber-50/20">
+              ${mealRate.toFixed(4)}
+            </td>
+            <td class="py-3 px-4 text-right font-mono text-slate-800 font-medium">
+              ${totalCost.toFixed(2)}
+            </td>
+            <td class="py-3 px-4 text-right font-mono ${diffColorClass}">
+              ${diff >= 0 ? '+' : ''}${diff.toFixed(2)}
+            </td>
+            <td class="py-3 px-4 text-center">
+              ${badgeHtml}
+            </td>
+            <td class="py-3 px-3 text-center no-print">
+              <button onclick="deleteMember('${member.id}')" title="ডিলিট করুন" class="opacity-0 group-hover:opacity-100 p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all">
+                <i data-lucide="trash-2" class="w-4 h-4"></i>
+              </button>
+            </td>
+          </tr>
+        `;
+      });
+
+      tbody.innerHTML = html;
+
+      // Table Footer with Totals
+      tfoot.innerHTML = `
+        <tr class="text-slate-900">
+          <td colspan="2" class="py-3.5 px-4 text-left font-bold tracking-wider uppercase text-rose-600">Total</td>
+          <td class="py-3.5 px-4 text-right font-mono font-bold text-rose-600 bg-rose-50/30">${totalDeposit.toFixed(0)}</td>
+          <td class="py-3.5 px-4 text-right font-mono font-bold">${totalMeals.toFixed(1)}</td>
+          <td class="py-3.5 px-4 text-right font-mono text-xs text-amber-800 bg-amber-50/50">${mealRate.toFixed(4)}</td>
+          <td class="py-3.5 px-4 text-right font-mono font-extrabold bg-yellow-100/80 text-slate-900">${totalCalculatedCost.toFixed(2)}</td>
+          <td class="py-3.5 px-4 text-right font-mono font-bold ${Math.abs(totalBalanceDiff) < 0.01 ? 'text-slate-500' : (totalBalanceDiff > 0 ? 'text-rose-600' : 'text-emerald-600')}">
+            ${Math.abs(totalBalanceDiff) < 0.01 ? '0.00 (Balanced)' : totalBalanceDiff.toFixed(2)}
+          </td>
+          <td colspan="2" class="py-3.5 px-4 text-center text-xs font-normal text-slate-500">
+            ${Math.abs(totalDeposit - totalCalculatedCost) < 0.1 ? '✓ সম্পূর্ণ হিসাব মিল রয়েছে' : 'ব্যালেন্স সমন্বয়াধীন'}
+          </td>
+        </tr>
+      `;
+
+      lucide.createIcons();
+    }
+
+    // Helper: update field in array
+    function updateMemberField(id, field, value) {
+      const member = members.find(m => m.id === id);
+      if (!member) return;
+
+      if (field === 'name') {
+        member.name = value.trim() || 'Unknown';
+      } else if (field === 'deposit') {
+        member.deposit = parseFloat(value) || 0;
+      } else if (field === 'meal') {
+        member.meal = parseFloat(value) || 0;
+      }
+
+      // If user hasn't set custom expense, auto sync with deposit
+      if (!isExpenseManuallySet && field === 'deposit') {
+        const sumDeposit = members.reduce((sum, m) => sum + (Number(m.deposit) || 0), 0);
+        totalExpense = sumDeposit;
+        document.getElementById('totalExpenseInput').value = totalExpense;
+      }
+
+      persistData();
+      calculateAndRender();
+    }
+
+    // Delete Member
+    function deleteMember(id) {
+      const target = members.find(m => m.id === id);
+      const name = target ? target.name : 'মেম্বার';
+      if (confirm(`আপনি কি "${name}" কে তালিকা থেকে মুছে ফেলতে চান?`)) {
+        members = members.filter(m => m.id !== id);
+        persistData();
+        calculateAndRender();
+        showToast(`${name} কে মুছে ফেলা হয়েছে!`, "info");
+      }
+    }
+
+    // Add Member Modal handlers
+    function openAddMemberModal() {
+      document.getElementById('addMemberModal').classList.remove('hidden');
+      document.getElementById('addMemberModal').classList.add('flex');
+      document.getElementById('modalName').focus();
+    }
+
+    function closeAddMemberModal() {
+      document.getElementById('addMemberModal').classList.add('hidden');
+      document.getElementById('addMemberModal').classList.remove('flex');
+      document.getElementById('addMemberForm').reset();
+    }
+
+    function handleAddMember(e) {
+      e.preventDefault();
+      const name = document.getElementById('modalName').value.trim();
+      const deposit = parseFloat(document.getElementById('modalDeposit').value) || 0;
+      const meal = parseFloat(document.getElementById('modalMeal').value) || 0;
+
+      if (!name) return;
+
+      const newMember = {
+        id: Date.now().toString(),
+        name,
+        deposit,
+        meal
+      };
+
+      members.push(newMember);
+      
+      // Update expense if matching
+      if (!isExpenseManuallySet) {
+        totalExpense += deposit;
+        document.getElementById('totalExpenseInput').value = totalExpense;
+      }
+
+      persistData();
+      calculateAndRender();
+      closeAddMemberModal();
+      showToast(`"${name}" সফলভাবে যুক্ত হয়েছে!`, "success");
+    }
+
+    // Rounding utility
+    function roundAllValues() {
+      members = members.map(m => ({
+        ...m,
+        deposit: Math.round(m.deposit),
+        meal: Math.round(m.meal * 2) / 2 // keep half-meals accurate
+      }));
+      totalExpense = Math.round(totalExpense);
+      document.getElementById('totalExpenseInput').value = totalExpense;
+      persistData();
+      calculateAndRender();
+      showToast("সকল মিল ও টাকার হিসাব রাউন্ড করা হয়েছে!", "info");
+    }
+
+    // Export to CSV
+    function exportToCSV() {
+      const { mealRate } = computeMetrics();
+      let csv = 'Deposit Name,Deposit (Amount),Meal,Meal Rate,Total Cost,TC-Deposit,Status\n';
+
+      members.forEach(m => {
+        const deposit = Number(m.deposit) || 0;
+        const meal = Number(m.meal) || 0;
+        const cost = meal * mealRate;
+        const diff = cost - deposit;
+        const status = diff > 0 ? 'Due (Dite Hobe)' : (diff < 0 ? 'Refund (Pabe)' : 'Settled');
+        csv += `"${m.name.replace(/"/g, '""')}",${deposit},${meal},${mealRate.toFixed(4)},${cost.toFixed(2)},${diff.toFixed(2)},"${status}"\n`;
+      });
+
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.setAttribute('href', url);
+      link.setAttribute('download', `mess_meal_sheet_${new Date().toISOString().slice(0, 10)}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      showToast("CSV ফাইল ডাউনলোড হয়েছে!", "success");
+    }
+
+    // Modal preview controls
+    function closeImageModal() {
+      document.getElementById('imagePreviewModal').classList.add('hidden');
+      document.getElementById('imagePreviewModal').classList.remove('flex');
+    }
+
+    // High-resolution Canvas Rendering for Summary Image
+    function generateSummaryCanvas() {
+      const canvas = document.getElementById('summaryCanvas');
+      const ctx = canvas.getContext('2d');
+      const { totalDeposit, totalMeals, mealRate, cashInHand } = computeMetrics();
+
+      const scale = 2; // High DPI for crisp mobile viewing
+      const width = 800;
+      const rowHeight = 44;
+      const headerHeight = 180;
+      const footerHeight = 70;
+      const contentHeight = headerHeight + (members.length * rowHeight) + footerHeight + 40;
+      const height = contentHeight;
+
+      canvas.width = width * scale;
+      canvas.height = height * scale;
+      ctx.scale(scale, scale);
+
+      // Background gradient
+      const bgGrad = ctx.createLinearGradient(0, 0, width, height);
+      bgGrad.addColorStop(0, '#f8fafc');
+      bgGrad.addColorStop(1, '#f1f5f9');
+      ctx.fillStyle = bgGrad;
+      ctx.fillRect(0, 0, width, height);
+
+      // Main White Card with rounded corners
+      const cardMargin = 20;
+      const cardWidth = width - (cardMargin * 2);
+      const cardHeight = height - (cardMargin * 2);
+      drawRoundedRect(ctx, cardMargin, cardMargin, cardWidth, cardHeight, 18, '#ffffff');
+
+      // Card Header Banner
+      const headerGrad = ctx.createLinearGradient(cardMargin, cardMargin, cardMargin + cardWidth, cardMargin);
+      headerGrad.addColorStop(0, '#4338ca');
+      headerGrad.addColorStop(1, '#6366f1');
+      drawTopRoundedRect(ctx, cardMargin, cardMargin, cardWidth, 80, 18, headerGrad);
+
+      // Title Text
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 22px Inter, sans-serif';
+      ctx.fillText('মেস মিল ও খরচের হিসাব বিবরণী', cardMargin + 24, cardMargin + 38);
+
+      ctx.fillStyle = '#c7d2fe';
+      ctx.font = '13px Inter, sans-serif';
+      const dateStr = new Date().toLocaleDateString('bn-BD', { day: 'numeric', month: 'long', year: 'numeric' });
+      ctx.fillText(`তারিখ: ${dateStr} • স্বয়ংক্রিয় লাইভ হিসাব`, cardMargin + 24, cardMargin + 60);
+
+      // 3 Stat Boxes (Total Bazar, Total Meals, Meal Rate)
+      const statsY = cardMargin + 95;
+      const statBoxW = (cardWidth - 48 - 24) / 3;
+      const statBoxH = 60;
+
+      // Box 1: Bazar
+      drawRoundedRect(ctx, cardMargin + 24, statsY, statBoxW, statBoxH, 10, '#f8fafc', '#e2e8f0');
+      ctx.fillStyle = '#64748b';
+      ctx.font = '500 11px Inter, sans-serif';
+      ctx.fillText('মোট বাজার খরচ', cardMargin + 36, statsY + 22);
+      ctx.fillStyle = '#0f172a';
+      ctx.font = 'bold 16px Inter, monospace';
+      ctx.fillText(`৳ ${totalExpense.toLocaleString('en-US')}`, cardMargin + 36, statsY + 45);
+
+      // Box 2: Total Meals
+      drawRoundedRect(ctx, cardMargin + 24 + statBoxW + 12, statsY, statBoxW, statBoxH, 10, '#f8fafc', '#e2e8f0');
+      ctx.fillStyle = '#64748b';
+      ctx.font = '500 11px Inter, sans-serif';
+      ctx.fillText('মোট মিল সংখ্যা', cardMargin + 36 + statBoxW + 12, statsY + 22);
+      ctx.fillStyle = '#0f172a';
+      ctx.font = 'bold 16px Inter, monospace';
+      ctx.fillText(`${totalMeals.toFixed(1)} টি`, cardMargin + 36 + statBoxW + 12, statsY + 45);
+
+      // Box 3: Meal Rate
+      drawRoundedRect(ctx, cardMargin + 24 + (statBoxW + 12) * 2, statsY, statBoxW, statBoxH, 10, '#fffbeb', '#fde68a');
+      ctx.fillStyle = '#b45309';
+      ctx.font = '600 11px Inter, sans-serif';
+      ctx.fillText('বর্তমান মিল রেট', cardMargin + 36 + (statBoxW + 12) * 2, statsY + 22);
+      ctx.fillStyle = '#b45309';
+      ctx.font = 'bold 17px Inter, monospace';
+      ctx.fillText(`৳ ${mealRate.toFixed(4)}`, cardMargin + 36 + (statBoxW + 12) * 2, statsY + 45);
+
+      // Table Header
+      const tableStartY = statsY + statBoxH + 22;
+      drawRoundedRect(ctx, cardMargin + 16, tableStartY, cardWidth - 32, 34, 6, '#f1f5f9');
+      ctx.fillStyle = '#475569';
+      ctx.font = 'bold 11px Inter, sans-serif';
+
+      ctx.fillText('সদস্যের নাম', cardMargin + 30, tableStartY + 21);
+      ctx.fillText('জমা (৳)', cardMargin + 220, tableStartY + 21);
+      ctx.fillText('মিল', cardMargin + 325, tableStartY + 21);
+      ctx.fillText('মিল খরচ (৳)', cardMargin + 410, tableStartY + 21);
+      ctx.fillText('ব্যালেন্স / স্ট্যাটাস', cardMargin + 540, tableStartY + 21);
+
+      // Member Rows
+      let currentY = tableStartY + 34;
+      members.forEach((m, idx) => {
+        const deposit = Number(m.deposit) || 0;
+        const meal = Number(m.meal) || 0;
+        const cost = meal * mealRate;
+        const diff = cost - deposit;
+
+        // Alternate stripe
+        if (idx % 2 === 1) {
+          ctx.fillStyle = '#f8fafc';
+          ctx.fillRect(cardMargin + 16, currentY, cardWidth - 32, rowHeight);
+        }
+
+        // Divider line
+        ctx.strokeStyle = '#f1f5f9';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(cardMargin + 16, currentY + rowHeight);
+        ctx.lineTo(cardMargin + cardWidth - 16, currentY + rowHeight);
+        ctx.stroke();
+
+        // Text values
+        ctx.fillStyle = '#1e293b';
+        ctx.font = '600 13px Inter, sans-serif';
+        ctx.fillText(m.name, cardMargin + 30, currentY + 26);
+
+        ctx.font = '500 13px monospace';
+        ctx.fillStyle = '#334155';
+        ctx.fillText(deposit.toFixed(0), cardMargin + 220, currentY + 26);
+        ctx.fillText(meal.toFixed(1), cardMargin + 325, currentY + 26);
+        ctx.fillText(cost.toFixed(2), cardMargin + 410, currentY + 26);
+
+        // Status badge pill
+        const isDue = diff > 0.001;
+        const isRefund = diff < -0.001;
+        const badgeX = cardMargin + 535;
+        const badgeY = currentY + 11;
+        const badgeW = 190;
+        const badgeH = 24;
+
+        if (isDue) {
+          drawRoundedRect(ctx, badgeX, badgeY, badgeW, badgeH, 12, '#ffe4e6');
+          ctx.fillStyle = '#e11d48';
+          ctx.font = 'bold 11px Inter, sans-serif';
+          ctx.fillText(`দিতে হবে: ৳ ${Math.abs(diff).toFixed(1)}`, badgeX + 12, badgeY + 16);
+        } else if (isRefund) {
+          drawRoundedRect(ctx, badgeX, badgeY, badgeW, badgeH, 12, '#dcfce7');
+          ctx.fillStyle = '#15803d';
+          ctx.font = 'bold 11px Inter, sans-serif';
+          ctx.fillText(`ফেরত পাবে: ৳ ${Math.abs(diff).toFixed(1)}`, badgeX + 12, badgeY + 16);
+        } else {
+          drawRoundedRect(ctx, badgeX, badgeY, badgeW, badgeH, 12, '#f1f5f9');
+          ctx.fillStyle = '#64748b';
+          ctx.font = 'bold 11px Inter, sans-serif';
+          ctx.fillText('হিসাব সমান (Settled)', badgeX + 14, badgeY + 16);
+        }
+
+        currentY += rowHeight;
+      });
+
+      // Bottom Summary Footer Line
+      const footerY = currentY + 16;
+      ctx.fillStyle = '#94a3b8';
+      ctx.font = '11px Inter, sans-serif';
+      ctx.fillText(`মেস ক্যাশ হাতে: ৳ ${cashInHand.toFixed(2)} • সর্বমোট সদস্য: ${members.length} জন`, cardMargin + 30, footerY);
+
+      return canvas;
+    }
+
+    // Helper Canvas shapes
+    function drawRoundedRect(ctx, x, y, width, height, radius, fill, stroke) {
+      ctx.beginPath();
+      ctx.moveTo(x + radius, y);
+      ctx.lineTo(x + width - radius, y);
+      ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+      ctx.lineTo(x + width, y + height - radius);
+      ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+      ctx.lineTo(x + radius, y + height);
+      ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+      ctx.lineTo(x, y + radius);
+      ctx.quadraticCurveTo(x, y, x + radius, y);
+      ctx.closePath();
+      if (fill) {
+        ctx.fillStyle = fill;
+        ctx.fill();
+      }
+      if (stroke) {
+        ctx.strokeStyle = stroke;
+        ctx.lineWidth = 1;
+        ctx.stroke();
+      }
+    }
+
+    function drawTopRoundedRect(ctx, x, y, width, height, radius, fill) {
+      ctx.beginPath();
+      ctx.moveTo(x + radius, y);
+      ctx.lineTo(x + width - radius, y);
+      ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+      ctx.lineTo(x + width, y + height);
+      ctx.lineTo(x, y + height);
+      ctx.lineTo(x, y + radius);
+      ctx.quadraticCurveTo(x, y, x + radius, y);
+      ctx.closePath();
+      ctx.fillStyle = fill;
+      ctx.fill();
+    }
+
+    // Copy Summary Image to Clipboard & Fallback
+    async function copySummaryImage() {
+      const btn = document.getElementById('copySummaryBtn');
+      const originalHtml = btn.innerHTML;
+      btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i><span>তৈরি হচ্ছে...</span>`;
+      btn.disabled = true;
+
+      try {
+        const canvas = generateSummaryCanvas();
+
+        canvas.toBlob(async (blob) => {
+          let copied = false;
+          if (navigator.clipboard && window.ClipboardItem) {
+            try {
+              await navigator.clipboard.write([
+                new ClipboardItem({ 'image/png': blob })
+              ]);
+              copied = true;
+            } catch (err) {
+              console.warn("Direct clipboard writing failed, opening preview modal...", err);
+            }
+          }
+
+          const dataUrl = canvas.toDataURL('image/png');
+          const previewImg = document.getElementById('previewImageTag');
+          previewImg.src = dataUrl;
+
+          const downloadBtn = document.getElementById('modalDownloadBtn');
+          downloadBtn.onclick = () => {
+            const a = document.createElement('a');
+            a.href = dataUrl;
+            a.download = `mess_meal_summary_${new Date().toISOString().slice(0, 10)}.png`;
+            a.click();
+          };
+
+          if (copied) {
+            showToast("✓ ছবি ক্লিপবোর্ডে কপি হয়েছে! মেসেঞ্জার বা হোয়াটসঅ্যাপ গ্রুপে সরাসরি Paste (Ctrl+V) করুন।", "success");
+          } else {
+            // Open fallback modal for mobile or unsupported browsers
+            document.getElementById('imagePreviewModal').classList.remove('hidden');
+            document.getElementById('imagePreviewModal').classList.add('flex');
+            showToast("ছবি তৈরি হয়েছে! ডাউনলোড করে গ্রুপে শেয়ার করুন।", "info");
+          }
+
+          btn.innerHTML = originalHtml;
+          btn.disabled = false;
+          lucide.createIcons();
+        }, 'image/png');
+
+      } catch (err) {
+        console.error(err);
+        btn.innerHTML = originalHtml;
+        btn.disabled = false;
+        lucide.createIcons();
+        showToast("ছবি তৈরিতে সমস্যা হয়েছে। আবার চেষ্টা করুন।", "info");
+      }
+    }
+
+    // Helper: Toast Notifications
+    function showToast(message, type = "success") {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      
+      const bgColor = type === 'success' ? 'bg-emerald-600' : (type === 'info' ? 'bg-indigo-600' : 'bg-slate-800');
+      toast.className = `${bgColor} text-white text-xs font-semibold px-4 py-2.5 rounded-xl shadow-lg flex items-center gap-2 transform transition-all duration-300 translate-y-3 opacity-0`;
+      toast.innerHTML = `<span>${escapeHtml(message)}</span>`;
+      
+      container.appendChild(toast);
+      
+      // Animate in
+      requestAnimationFrame(() => {
+        toast.classList.remove('translate-y-3', 'opacity-0');
+      });
+
+      // Remove after 3 seconds
+      setTimeout(() => {
+        toast.classList.add('opacity-0', 'translate-y-2');
+        setTimeout(() => toast.remove(), 300);
+      }, 2800);
+    }
+
+    // Helper: Escape HTML
+    function escapeHtml(text) {
+      const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
+      return String(text).replace(/[&<>"']/g, m => map[m]);
+    }
+
+    // Start on load
+    window.addEventListener('DOMContentLoaded', () => {
+      initData();
+    });
+  </script>
+</body>
+</html>
